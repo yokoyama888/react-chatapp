@@ -32,16 +32,18 @@ import {
   ModalHeader,
   ModalCloseButton,
   ModalBody,
-  ModalFooter
+  Input,
+  StackDivider
 } from '@chakra-ui/react';
+import { async } from '@firebase/util';
 import { signOut } from 'firebase/auth';
-import { addDoc, collection, doc, DocumentData, getDoc, onSnapshot, orderBy, query, serverTimestamp, where } from 'firebase/firestore';
+import { addDoc, collection, doc, DocumentData, getDoc, getDocs, onSnapshot, orderBy, query, serverTimestamp, where } from 'firebase/firestore';
 import { useEffect, useState } from 'react';
 import {
   FiHome,
   FiMenu,
-  FiSearch,
   FiChevronDown,
+  FiSearch
 } from 'react-icons/fi';
 import { useNavigate } from 'react-router-dom';
 import { auth, db } from '../config/firebase';
@@ -55,10 +57,10 @@ interface MobileProps extends FlexProps {
   onOpen: () => void;
 }
 
-//取得するメッセージリストの型
-type messageDateType = {
-  messageText: any;
-  senderName: string;
+type searchUserDateType = {
+  id: number;
+  userID: string;
+  name?: string;
 }
 
 export const Home = () => {
@@ -76,7 +78,7 @@ export const Home = () => {
   //メッセージ管理
   const [message, setMessage] = useState("");
   const messagecollectionRef = collection(db, "messages");
-  const [messageList, setMessageList] = useState<Array<String | messageDateType | undefined>>([]);
+  const [messageList, setMessageList] = useState<Array<String | undefined>>([]);
 
   //ログインユーザーの情報取得
   const { loginUser } = useLoginUser();
@@ -85,6 +87,10 @@ export const Home = () => {
 
   // 処理内でのリダイレクト設定用
   const navigate = useNavigate();
+
+  // ユーザー検索管理
+  const [searchText, setSearchText] = useState("");
+  const [searchUsers, setSearchUsers] = useState([]);
 
   useEffect(() => {
     if (loginUser) {
@@ -141,6 +147,28 @@ export const Home = () => {
   const onClickSignOut = () => {
     signOut(auth);
     navigate("/login/");
+  }
+
+  // フレンド検索入力内容保存
+  const onChangeSearchText = (event: React.ChangeEvent<HTMLInputElement>): void => setSearchText(event.target.value);
+
+  // Firestoreからユーザーを検索
+  const onClickSearchUser = async () => {
+    const userQuery = query(collection(db, "users"), where("email", "==", searchText));
+    await getDocs(userQuery).then(snapshot => {
+      let users: any = [];
+      snapshot.docs.forEach(doc => {
+        let userDate = {
+          id: doc.id,
+          userName: doc.data().name,
+        }
+        users = [...users, userDate];
+        setSearchUsers(users);
+      });
+      console.log(searchUsers);
+    }).catch(error => {
+      console.log(error);
+    });
   }
 
   //サイドバー
@@ -224,17 +252,43 @@ export const Home = () => {
         </Flex>
         <Modal isOpen={'userSearch' === selectedItem} onClose={onCloseDialog}>
           <ModalOverlay />
-          <ModalContent>
-            <ModalHeader>Modal Title</ModalHeader>
+          <ModalContent maxW="700px">
+            <ModalHeader>ユーザーを検索</ModalHeader>
             <ModalCloseButton />
             <ModalBody>
-              テストテストテストテストテスト
+              <Flex justify="center">
+                <HStack bgColor="white" borderRadius="10px">
+                  <Icon
+                    as={FiSearch}
+                    fontSize="27px"
+                    color="teal.500"
+                    ml="8px"
+                    w="30px"
+                  />
+                  <Input
+                    border="none"
+                    outline="transparent solid 2px"
+                    placeholder="メールアドレスを入力してください..."
+                    w="530px"
+                    h="65px"
+                    onChange={onChangeSearchText}
+                    value={searchText}
+                    />
+                    <Button w="80px" h="45px" colorScheme='teal' onClick={onClickSearchUser}>
+                      検索
+                    </Button>
+                </HStack>
+              </Flex>
+              <VStack
+                divider={<StackDivider borderColor='gray.200' />}
+                spacing={4}
+                align='stretch'
+                >
+                {searchUsers.map(({ userName, id }):any => {
+                  <Box key={id}>a{userName}</Box>
+                })}
+              </VStack>
             </ModalBody>
-            <ModalFooter>
-              <Button colorScheme='blue' mr={3} onClick={onClose}>
-                Close
-              </Button>
-            </ModalFooter>
           </ModalContent>
         </Modal>
         <Flex alignItems={'center'}>
