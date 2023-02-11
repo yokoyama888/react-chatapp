@@ -26,26 +26,18 @@ import {
   Heading,
   Button,
   Textarea,
-  Modal,
-  ModalOverlay,
-  ModalContent,
-  ModalHeader,
-  ModalCloseButton,
-  ModalBody,
-  Input,
-  StackDivider
 } from '@chakra-ui/react';
-import { async } from '@firebase/util';
 import { signOut } from 'firebase/auth';
-import { addDoc, collection, doc, DocumentData, getDoc, getDocs, onSnapshot, orderBy, query, serverTimestamp, where } from 'firebase/firestore';
+import { addDoc, collection, doc, DocumentData, getDoc, onSnapshot, orderBy, query, serverTimestamp, where } from 'firebase/firestore';
 import { useEffect, useState } from 'react';
 import {
   FiHome,
   FiMenu,
   FiChevronDown,
-  FiSearch
+  FiUser
 } from 'react-icons/fi';
 import { useNavigate } from 'react-router-dom';
+import { FrendSerach } from '../components/organisms/FrendSerach';
 import { auth, db } from '../config/firebase';
 import { useLoginUser } from '../hooks/useLoginUser';
 
@@ -57,23 +49,12 @@ interface MobileProps extends FlexProps {
   onOpen: () => void;
 }
 
-type searchUserDateType = {
-  id: number;
-  userID: string;
-  name?: string;
-}
-
 export const Home = () => {
   // Firebaseのモーダルウインドウ設定用
   const { isOpen, onOpen, onClose } = useDisclosure();
   const [selectedItem, setSelectedItem] = useState<string>('');
-  const onOpenDialog = (name: string) => {
-    setSelectedItem(name)
-  }
-
-  const onCloseDialog = () => {
-    setSelectedItem('')
-  }
+  const onOpenDialog = (name: string) => setSelectedItem(name);
+  const onCloseDialog = () => setSelectedItem('');
 
   //メッセージ管理
   const [message, setMessage] = useState("");
@@ -85,12 +66,11 @@ export const Home = () => {
   const [userID, setUserID] = useState("");
   const [roomID, setRoomID] = useState("");
 
+  //フレンドリスト管理
+  const [friendList, setFriendList] = useState<Array<any>>([]);
+
   // 処理内でのリダイレクト設定用
   const navigate = useNavigate();
-
-  // ユーザー検索管理
-  const [searchText, setSearchText] = useState("");
-  const [searchUsers, setSearchUsers] = useState([]);
 
   useEffect(() => {
     if (loginUser) {
@@ -149,27 +129,34 @@ export const Home = () => {
     navigate("/login/");
   }
 
-  // フレンド検索入力内容保存
-  const onChangeSearchText = (event: React.ChangeEvent<HTMLInputElement>): void => setSearchText(event.target.value);
+  //フレンド情報を取得
+  useEffect(() => {
+    if (userID) {
+      //Firestoreのサブコレクションのfriendsに接続
+      const myFriendsCollectionRef = collection(db, "users", userID, "friendUsers");
+      onSnapshot(myFriendsCollectionRef,
+        (snapshot) => {
+          let friendUsers: any = [];
+          snapshot.docs.forEach((docValue: any) => {
+            let friendUserID = docValue.data().userID;
 
-  // Firestoreからユーザーを検索
-  const onClickSearchUser = async () => {
-    const userQuery = query(collection(db, "users"), where("email", "==", searchText));
-    await getDocs(userQuery).then(snapshot => {
-      let users: any = [];
-      snapshot.docs.forEach(doc => {
-        let userDate = {
-          id: doc.id,
-          userName: doc.data().name,
-        }
-        users = [...users, userDate];
-        setSearchUsers(users);
-      });
-      console.log(searchUsers);
-    }).catch(error => {
-      console.log(error);
-    });
-  }
+            // フレンドのユーザー情報を取得
+            const friendCollectionRef = doc(db, "users", friendUserID);
+            getDoc(friendCollectionRef).then((docSnap: DocumentData | undefined) => {
+              let friendUserDate = {
+                userID: friendUserID,
+                roomID: docValue.data().roomID,
+                friendName: docSnap?.data().name,
+              }
+              friendUsers = [...friendUsers, friendUserDate];
+
+              //フレンド情報を格納
+              setFriendList(friendUsers);
+            });
+          })
+        })
+    }
+  }, [userID]);
 
   //サイドバー
   const SidebarContent = ({ onClose }: SidebarProps) => {
@@ -210,6 +197,34 @@ export const Home = () => {
             />
           Home
         </Flex>
+        {friendList.length !== 0 && (
+          <>
+          {friendList.map(({friendName, roomID}) => (
+            <Flex
+            align="center"
+            p="4"
+            mx="4"
+            borderRadius="lg"
+            role="group"
+            cursor="pointer"
+            _hover={{
+            bg: 'cyan.400',
+            color: 'white',
+            }}
+            key={roomID}>
+              <Icon
+                mr="4"
+                fontSize="16"
+                _groupHover={{
+                  color: 'white',
+                }}
+                as={FiUser}
+              />
+              {friendName}
+            </Flex>
+          ))}
+          </>
+        )}
       </Link>
     </Box>
     );
@@ -250,47 +265,7 @@ export const Home = () => {
           <Search2Icon boxSize={4} mr="2" />
           <Text>ユーザーを検索</Text>
         </Flex>
-        <Modal isOpen={'userSearch' === selectedItem} onClose={onCloseDialog}>
-          <ModalOverlay />
-          <ModalContent maxW="700px">
-            <ModalHeader>ユーザーを検索</ModalHeader>
-            <ModalCloseButton />
-            <ModalBody>
-              <Flex justify="center">
-                <HStack bgColor="white" borderRadius="10px">
-                  <Icon
-                    as={FiSearch}
-                    fontSize="27px"
-                    color="teal.500"
-                    ml="8px"
-                    w="30px"
-                  />
-                  <Input
-                    border="none"
-                    outline="transparent solid 2px"
-                    placeholder="メールアドレスを入力してください..."
-                    w="530px"
-                    h="65px"
-                    onChange={onChangeSearchText}
-                    value={searchText}
-                    />
-                    <Button w="80px" h="45px" colorScheme='teal' onClick={onClickSearchUser}>
-                      検索
-                    </Button>
-                </HStack>
-              </Flex>
-              <VStack
-                divider={<StackDivider borderColor='gray.200' />}
-                spacing={4}
-                align='stretch'
-                >
-                {searchUsers.map(({ userName, id }):any => {
-                  <Box key={id}>a{userName}</Box>
-                })}
-              </VStack>
-            </ModalBody>
-          </ModalContent>
-        </Modal>
+        <FrendSerach selectedItem={selectedItem} onCloseDialog={onCloseDialog} loginUserID={userID} />
         <Flex alignItems={'center'}>
           <Menu>
             <MenuButton
@@ -322,8 +297,6 @@ export const Home = () => {
             <MenuList
               bg={useColorModeValue('white', 'gray.900')}
               borderColor={useColorModeValue('gray.200', 'gray.700')} color="black">
-              <MenuItem>Profile</MenuItem>
-              <MenuDivider />
               <MenuItem onClick={onClickSignOut}>サインアウト</MenuItem>
             </MenuList>
           </Menu>
