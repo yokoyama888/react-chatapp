@@ -30,10 +30,6 @@ export const Login = () => {
     <>
       {loginUser ? (
         <>
-          <Alert status="success">
-            <AlertIcon />
-            ログインしました！
-          </Alert>
           <Navigate to={'/'} />
         </>
       ) : (

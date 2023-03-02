@@ -101,6 +101,7 @@ export const ChatMessageList = ({userID, loginUser, roomID, roomName}:propsType)
           size="lg"
           h="200px"
           onChange={onChangeMessage}
+          placeholder="メッセージを入力してください..."
         />
       </Box>
     </Box>
