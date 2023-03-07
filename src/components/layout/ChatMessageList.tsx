@@ -50,6 +50,7 @@ export const ChatMessageList = ({userID, loginUser, roomID, roomName}:propsType)
                 id: querySnapshotData.id,
                 messageText: querySnapshotData.data().texts,
                 senderName: userDocSnap?.data().name,
+                senderUserIcon: userDocSnap?.data().icon,
               }
               getMessageList = [...getMessageList, setMessageDate];
               setMessageList(getMessageList);
@@ -65,15 +66,16 @@ export const ChatMessageList = ({userID, loginUser, roomID, roomName}:propsType)
         {roomName ? roomName : "マイルーム"}
       </Heading>
       <Stack spacing={4} p="20px 30px 50px" overflowY="auto" maxH="500px" mb="50px" bg="white">
-        {messageList.map(({ id, messageText, senderName }: any) => (
+        {messageList.map(({ id, messageText, senderName, senderUserIcon }: any) => (
           <Box pt="20px" pb="30px" borderBottom="1px" borderColor="black" key={id}>
             <Flex w="500px" mb="5px" align="center">
               <Box w="55px" h="55px" borderRadius="100%" overflow="hidden" mr="3">
                 <Image
                   h="100%"
+                  w="100%"
                   fit="cover"
                   align="center"
-                  src="https://thumb.photo-ac.com/b9/b9ccccbfd33ef11ab3c863218c93bab6_w.jpeg" />
+                  src={senderUserIcon} />
               </Box>
               <Text fontSize="xl" fontWeight="bold">{senderName}</Text>
             </Flex>

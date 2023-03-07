@@ -14,6 +14,8 @@ export const Home = () => {
   const { loginUser } = useLoginUser();
   const [userID, setUserID] = useState("");
   const [roomID, setRoomID] = useState("");
+  const [userName, setUserName] = useState("");
+  const [iconUrl, setIconUrl] = useState("");
 
   // ログインしているユーザー情報を取得
   useEffect(() => {
@@ -23,6 +25,8 @@ export const Home = () => {
       const userCollectionRef = doc(db, "users", loginUser!.uid);
       getDoc(userCollectionRef).then((docSnap: DocumentData | undefined) => {
         setRoomID(docSnap?.data().myroomID);
+        setUserName(docSnap?.data().name);
+        setIconUrl(docSnap?.data().icon);
       });
     }
   }, [loginUser]);
@@ -35,7 +39,7 @@ export const Home = () => {
       ) : (
         <Box minH="100vh" bg="gray.100">
           <Sidebar userID={userID} />
-          <Header userID={userID} />
+          <Header userID={userID} userName={userName} iconUrl={iconUrl} />
           <ChatMessageList userID={userID} loginUser={loginUser} roomID={roomID} />
         </Box>
       )}

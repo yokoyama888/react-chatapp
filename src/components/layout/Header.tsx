@@ -9,10 +9,11 @@ import { FrendSerach } from "../organisms/FrendSerach"
 
 type propsType = {
   userID: string;
+  userName?: string;
+  iconUrl?: string;
 }
 
-
-export const Header = ({userID}:propsType) => {
+export const Header = ({userID, userName, iconUrl}:propsType) => {
   // Firebaseのモーダルウインドウ設定用
   const [selectedItem, setSelectedItem] = useState<string>('');
   const onOpenDialog = (name: string) => setSelectedItem(name);
@@ -55,19 +56,14 @@ export const Header = ({userID}:propsType) => {
               <HStack>
                 <Avatar
                   size={'sm'}
-                  src={
-                    'https://images.unsplash.com/photo-1619946794135-5bc917a27793?ixlib=rb-0.3.5&q=80&fm=jpg&crop=faces&fit=crop&h=200&w=200&s=b616b2c5b373a80ffc9636ba24f7a4a9'
-                  }
+                  src={iconUrl}
                 />
                 <VStack
                   display={{ base: 'none', md: 'flex' }}
                   alignItems="flex-start"
                   spacing="1px"
                   ml="2">
-                  <Text fontSize="sm">Justina Clark</Text>
-                  <Text fontSize="xs">
-                    Admin
-                  </Text>
+                  <Text fontSize="sm">{userName}</Text>
                 </VStack>
                 <Box display={{ base: 'none', md: 'flex' }}>
                   <FiChevronDown />
